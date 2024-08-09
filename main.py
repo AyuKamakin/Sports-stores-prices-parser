@@ -3,12 +3,13 @@ from bs4 import BeautifulSoup
 import json
 import re
 
-def get_price_sport_maraphon(url:str):
+
+def get_price_sportmaraphon(url: str):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-    price, discount_price=0,0
-    mess='Успешно получена цена'
+    price, discount_price = 0, 0
+    mess = 'Успешно получена цена'
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -21,13 +22,13 @@ def get_price_sport_maraphon(url:str):
             print('Цена товара:', price)
             print('Скидочная цена товара:', discount_price)
         else:
-            mess='Не удалось найти нужные данные на странице'
+            mess = 'Не удалось найти нужные данные на странице'
     else:
-        mess=f'Не удалось получить страницу, статус код: {response.status_code}'
-    return min(price,discount_price), mess
+        mess = f'Не удалось получить страницу, статус код: {response.status_code}'
+    return min(price, discount_price), mess
 
 
-def get_price_trial_sport(url: str):
+def get_price_trialsport(url: str):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
@@ -70,6 +71,7 @@ def get_price_trial_sport(url: str):
 
     return min(price, discount_price), mess
 
+
 def get_price_kant(url: str):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -111,4 +113,40 @@ def get_price_kant(url: str):
 
     return price, mess
 
-get_price_kant('https://www.kant.ru/catalog/product/3693040/')
+
+def get_price_splav(url: str):
+    price = 0
+    mess = 'Успешно получена цена'
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Поиск скрипта с JSON-LD данными
+        script_tag = soup.find('script', {'type': 'application/ld+json'})
+
+        if script_tag and script_tag.string:
+            try:
+                data = json.loads(script_tag.string)
+
+                # Поиск блока "offers" и извлечение цены
+                for item in data.get('@graph', []):
+                    if item.get('@type') == 'Product':
+                        offers = item.get('offers', [])
+                        if offers:
+                            price = offers[0].get('price', 0)
+                            break
+
+                if price:
+                    print('Цена товара:', price)
+                else:
+                    mess = 'Не удалось найти цену в данных'
+            except json.JSONDecodeError:
+                mess = 'Ошибка при разборе JSON'
+        else:
+            mess = 'Не удалось найти нужные данные на странице'
+    else:
+        mess = f'Не удалось получить страницу, статус код: {response.status_code}'
+
+    return price, mess
+
